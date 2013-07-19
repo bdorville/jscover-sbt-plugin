@@ -1,0 +1,2 @@
+jscover-sbt-plugin
+==================
