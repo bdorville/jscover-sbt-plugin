@@ -15,11 +15,12 @@ object JSCoverPlugin extends Plugin {
   val jscoverDestinationPath = SettingKey[File]("jscoverDestinationPath", "The path where the resources processed through JSCover will be outputed")
   val jscoverGenerate = TaskKey[Seq[File]]("jscoverGenerate")
   val jscoverExcludes = SettingKey[Seq[String]]("jscoverExclusions", "List of folders to exclude for JSCover instrumentation")
+  val jscoverVersion = SettingKey[String]("jscoverVersion", "The version of JSCover used")
 
   lazy val jscoverSettings: Seq[Setting[_]] = inConfig(jscoverConfig)(Seq[Setting[_]] (
     jscoverSourcePath <<= (resourceManaged in Compile) {_ / "public/javascripts"},
     jscoverDestinationPath <<= (resourceManaged in Compile) {_ / "public/jscover/javascripts"},
-    version := "0.3.1",
+    jscoverVersion := "0.3.1",
     classpathTypes := Set("jar"),
     jscoverExcludes := Seq[String]("bootstrap"),
     managedClasspath <<= (classpathTypes, update) map { (ct, report) =>
@@ -28,7 +29,7 @@ object JSCoverPlugin extends Plugin {
     jscoverGenerate <<= jscoverGenerateTask,
     resourceGenerators in Compile <+= jscoverGenerate
   )) ++ Seq[Setting[_]] (
-    libraryDependencies <+= (version in jscoverConfig)("com.github.tntim96" % "JSCover" % _ % "jscover"),
+    libraryDependencies <+= (jscoverVersion in jscoverConfig)("com.github.tntim96" % "JSCover" % _ % "jscover"),
     ivyConfigurations += jscoverConfig
   )
 
