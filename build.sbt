@@ -1,14 +1,14 @@
-sbtPlugin := true
 
-organization := "net.jazonnet.sbt.plugins"
-
-name := "jscover-sbt-plugin"
+name := "jscover-play"
 
 version := "1.0-SNAPSHOT"
 
-scalacOptions := Seq("-deprecation", "-unchecked")
+// Global Settings
+organization in ThisBuild := "net.jazonnet.sbt.plugins"
 
-publishTo <<= (version) { version: String =>
+scalacOptions in ThisBuild := Seq("-deprecation", "-unchecked")
+
+publishTo in ThisBuild <<= (version) { version: String =>
   val scalasbt = "https://sample.org/artifactory/"
   val (name, url) = if (version.trim.endsWith("SNAPSHOT"))
                       ("sbt-plugins-snapshots", scalasbt + "plugins-snapshot-local")
@@ -17,7 +17,7 @@ publishTo <<= (version) { version: String =>
   Some(Resolver.url(name, new URL(url))(Resolver.ivyStylePatterns))
 }
 
-publishMavenStyle := false
+publishMavenStyle in ThisBuild := false
 
-credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
+credentials in ThisBuild += Credentials(Path.userHome / ".ivy2" / ".credentials")
 
