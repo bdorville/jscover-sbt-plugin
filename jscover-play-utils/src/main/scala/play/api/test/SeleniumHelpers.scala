@@ -4,7 +4,7 @@ import play.api.test.{TestBrowser, TestServer}
 import org.openqa.selenium.remote.{RemoteWebDriver, DesiredCapabilities}
 import java.net.URL
 
-object SeleniumHelper {
+object SeleniumHelpers {
   def myRunning[T](testServer: TestServer,
                     gridUrl: String,
                     desiredCapabilities: DesiredCapabilities,
