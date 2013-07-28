@@ -12,11 +12,19 @@ object JSCoverPlugin extends Plugin {
   final val jscoverConfig = config("jscover")
 
   val jscoverSourcePath = SettingKey[File]("jscoverSourcePath", "The path of the resources to process through JSCover")
+
   val jscoverDestinationPath = SettingKey[File]("jscoverDestinationPath", "The path where the resources processed through JSCover will be outputed")
+
   val jscoverGenerate = TaskKey[Seq[File]]("jscoverGenerate")
+
+  val jscoverMergeReports = TaskKey[String]("jscoverMergeReports")
+
   val jscoverExcludes = SettingKey[Seq[String]]("jscoverExclusions", "List of folders to exclude for JSCover instrumentation")
+
   val jscoverVersion = SettingKey[String]("jscoverVersion", "The version of JSCover used")
 
+
+  // Define the settings values in a specific SBT configuration
   lazy val jscoverSettings: Seq[Setting[_]] = inConfig(jscoverConfig)(Seq[Setting[_]] (
     jscoverSourcePath <<= (resourceManaged in Compile) {_ / "public/javascripts"},
     jscoverDestinationPath <<= (resourceManaged in Compile) {_ / "public/jscover/javascripts"},

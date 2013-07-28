@@ -1,6 +1,5 @@
 package play.api.test
 
-import play.api.test.{TestBrowser, TestServer}
 import org.openqa.selenium.remote.{RemoteWebDriver, DesiredCapabilities}
 import java.net.URL
 
