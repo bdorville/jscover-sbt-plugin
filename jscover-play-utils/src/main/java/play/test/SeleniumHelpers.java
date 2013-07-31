@@ -1,7 +1,5 @@
 package play.test;
 
-import play.test.TestBrowser;
-import play.test.TestServer;
 import static play.test.Helpers.*;
 import play.libs.F.*;
 
@@ -12,18 +10,18 @@ import java.net.URL;
 
 public class SeleniumHelpers {
 
-    public static void running(TestServer server,
-                               String gridUrl,
-                               DesiredCapabilities desiredCapabilities,
-                               final Callback<TestBrowser> block) {
-        running(server, gridUrl, desiredCapabilities, null, block);
+    public static void runningRemote(TestServer server,
+                                     String gridUrl,
+                                     DesiredCapabilities desiredCapabilities,
+                                     final Callback<TestBrowser> block) {
+        runningRemote(server, gridUrl, desiredCapabilities, null, block);
     }
 
-    public static synchronized void running(TestServer server,
-                                            String gridUrl,
-                                            DesiredCapabilities desiredCapabilities,
-                                            DesiredCapabilities requiredCapabilities,
-                                            final Callback<TestBrowser> block) {
+    public static synchronized void runningRemote(TestServer server,
+                                                  String gridUrl,
+                                                  DesiredCapabilities desiredCapabilities,
+                                                  DesiredCapabilities requiredCapabilities,
+                                                  final Callback<TestBrowser> block) {
         TestBrowser browser = null;
         TestServer startedServer = null;
         try {

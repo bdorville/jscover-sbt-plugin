@@ -1,23 +1,25 @@
 package play.test;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.remote.DesiredCapabilities;
-
 import play.Logger;
-import play.test.*;
-import play.libs.F.*;
+import play.libs.F.Callback;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Iterator;
 import java.util.Set;
 
+import static org.fest.assertions.Assertions.assertThat;
 import static play.test.Helpers.*;
-import static play.test.SeleniumHelpers.*;
-import static org.fest.assertions.Assertions.*;
+import static play.test.SeleniumHelpers.runningRemote;
 
 /**
  * This class should be extended to provide useful features for testing with JSCovergare
@@ -26,28 +28,16 @@ public class JSCoverTest {
 
     private static final String JSCOVER_ASSETS_PATH = "/assets/jscover/javascripts/jscoverage.html";
 
-    private static File jscoverReports;
+    private static String jscoverReportTmp;
 
-    @BeforeClass
-    public static void before() {
-        jscoverReports = new File("target/test-reports/jscover");
-        if (!jscoverReports.exists()) {
-            jscoverReports.mkdir();
-        }
-        if (jscoverReports.isFile()) {
-            throw new IllegalStateException("A file exists where JSCover reports should be saved");
-        }
-        System.out.println(jscoverReports.getAbsolutePath());
-        for (String childPath: jscoverReports.list()) {
-            System.out.println("\t" + childPath);
-        }
-    }
+    @Rule
+    public TestRule coverageReportRule = new Watcher();
 
-    public static void runningWithCoverage(final String defaultUrl,
-                                           final Callback<TestBrowser> testCallback,
-                                           String gridUrl,
-                                           DesiredCapabilities desiredCapabilities) {
-        runningWithCoverage(defaultUrl, testCallback, gridUrl, desiredCapabilities, null);
+    public static void runningRemoteDriverWithCoverage(final String defaultUrl,
+                                                       final Callback<TestBrowser> testCallback,
+                                                       String gridUrl,
+                                                       DesiredCapabilities desiredCapabilities) {
+        runningRemoteDriverWithCoverage(defaultUrl, testCallback, gridUrl, desiredCapabilities, null);
     }
 
     /**
@@ -55,12 +45,12 @@ public class JSCoverTest {
      *
      * Once the page is reached, the browser window is changed.
      */
-    public static void runningWithCoverage(final String defaultUrl,
-                                           final Callback<TestBrowser> testCallback,
-                                           String gridUrl,
-                                           DesiredCapabilities desiredCapabilities,
-                                           DesiredCapabilities requiredCapabilities) {
-        running(testServer(3333, fakeApplication(inMemoryDatabase("test"))), gridUrl, DesiredCapabilities.chrome(), new Callback<TestBrowser>() {
+    public static void runningRemoteDriverWithCoverage(final String defaultUrl,
+                                                       final Callback<TestBrowser> testCallback,
+                                                       String gridUrl,
+                                                       DesiredCapabilities desiredCapabilities,
+                                                       DesiredCapabilities requiredCapabilities) {
+        runningRemote(testServer(3333, fakeApplication(inMemoryDatabase("test"))), gridUrl, desiredCapabilities, new Callback<TestBrowser>() {
             @Override
             public void invoke(TestBrowser testBrowser) throws Throwable {
                 // FIXME make relative to default Url
@@ -73,8 +63,8 @@ public class JSCoverTest {
                 assertThat(testBrowser.getDriver().getWindowHandles().size()).isEqualTo(2);
                 Set<String> windowHandles = testBrowser.getDriver().getWindowHandles();
                 String newTab = null;
-                for (Iterator<String> it = windowHandles.iterator(); it.hasNext();) {
-                    newTab = it.next();
+                for (String windowHandle : windowHandles) {
+                    newTab = windowHandle;
                     if (!jscoverWindowHandle.equals(newTab)) {
                         break;
                     }
@@ -87,21 +77,65 @@ public class JSCoverTest {
 
                 testCallback.invoke(testBrowser);
 
-                Logger.trace((String)((JavascriptExecutor)testBrowser.getDriver()).executeScript("return navigator.userAgent"));
+                Logger.trace((String) ((JavascriptExecutor) testBrowser.getDriver()).executeScript("return navigator.userAgent"));
                 testBrowser.getDriver().switchTo().window(jscoverWindowHandle);
-                String jsonReport = (String)((JavascriptExecutor)testBrowser.getDriver()).executeScript("return jscoverage_serializeCoverageToJSON()");
+                String jsonReport = (String) ((JavascriptExecutor) testBrowser.getDriver()).executeScript("return jscoverage_serializeCoverageToJSON()");
                 if (StringUtils.isNotBlank(jsonReport)) {
-                    File report = new File(jscoverReports, this.getClass().getName() + ".report");
-                    if (!report.exists()) {
-                        report.createNewFile();
-                    }
-                    FileWriter fw = new FileWriter(report, true);
-                    fw.write(jsonReport);
-                    fw.close();
+                    jscoverReportTmp = jsonReport;
                 } else {
                     Logger.info("No report to generate for test: " + this.getClass().getName());
                 }
             }
         });
+    }
+
+    private class Watcher extends TestWatcher {
+
+        private File jscoverReports;
+
+        private String jsonReport;
+
+        @Override
+        protected void starting(Description description) {
+            jscoverReports = new File("target/test-reports/jscover");
+            if (!jscoverReports.exists()) {
+                jscoverReports.mkdir();
+            }
+            if (jscoverReports.isFile()) {
+                throw new IllegalStateException("A file exists where JSCover reports should be saved");
+            }
+            Logger.debug(jscoverReports.getAbsolutePath());
+            for (String childPath: jscoverReports.list()) {
+                Logger.debug("\t" + childPath);
+            }
+            String reportFileName = description.getClassName() + "-" + description.getMethodName() + ".json";
+            jscoverReports = new File(jscoverReports, reportFileName);
+            if (!jscoverReports.exists()) {
+                try {
+                    jscoverReports.createNewFile();
+                } catch (IOException e) {
+                    Logger.error("Failed to create report file", e);
+                }
+            }
+        }
+
+        @Override
+        protected void succeeded(Description description) {
+            if (StringUtils.isNotEmpty(JSCoverTest.jscoverReportTmp)) {
+                jsonReport = jscoverReportTmp;
+            }
+        }
+
+        @Override
+        protected void finished(Description description) {
+            if (StringUtils.isNotBlank(jsonReport)) {
+                try {
+                    FileWriter fw = new FileWriter(jscoverReports);
+                    fw.write(jsonReport);
+                } catch (IOException e) {
+                    Logger.error("Failed to write JSON coverage report", e);
+                }
+            }
+        }
     }
 }
