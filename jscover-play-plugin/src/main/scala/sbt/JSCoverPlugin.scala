@@ -116,7 +116,7 @@ object JSCoverPlugin extends Plugin {
   private def jscoverMergeReports(cp:String, reportDir:String, destinationPath:String, log:Logger) = try {
     val proc = Process(
       "java",
-      Seq("-jar", cp, "jscover.report.Main", "--merge", reportDir, destinationPath)
+      Seq("-cp", cp, "jscover.report.Main", "--merge", reportDir, destinationPath)
     )
     log.info(proc.toString)
     proc ! log
