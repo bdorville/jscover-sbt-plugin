@@ -11,17 +11,21 @@ object JSCoverPlugin extends Plugin {
   // JSCover resource generation
   final val jscoverConfig = config("jscover")
 
-  val jscoverSourcePath = SettingKey[File]("jscoverSourcePath", "The path of the resources to process through JSCover")
+  lazy val jscoverSourcePath = SettingKey[File]("jscoverSourcePath", "The path of the resources to process through JSCover")
 
-  val jscoverDestinationPath = SettingKey[File]("jscoverDestinationPath", "The path where the resources processed through JSCover will be outputed")
+  lazy val jscoverDestinationPath = SettingKey[File]("jscoverDestinationPath", "The path where the resources processed through JSCover will be outputed")
 
-  val jscoverGenerate = TaskKey[Seq[File]]("jscoverGenerate")
+  lazy val jscoverGenerate = TaskKey[Seq[File]]("jscoverGenerate")
 
-  val jscoverMergeReports = TaskKey[String]("jscoverMergeReports")
+  lazy val jscoverMergeReports = TaskKey[String]("jscoverMergeReports")
 
-  val jscoverExcludes = SettingKey[Seq[String]]("jscoverExclusions", "List of folders to exclude for JSCover instrumentation")
+  lazy val jscoverReportFormat = SettingKey[String]("jscoverReportFormat", "The format for conversion (LCOV|COBERTURAXML|XMLSUMMARY)")
 
-  val jscoverVersion = SettingKey[String]("jscoverVersion", "The version of JSCover used")
+  lazy val jscoverFormatReport = TaskKey[String]("jscoverFormatReport", "Convert the report to another format")
+
+  lazy val jscoverExcludes = SettingKey[Seq[String]]("jscoverExclusions", "List of folders to exclude for JSCover instrumentation")
+
+  lazy val jscoverVersion = SettingKey[String]("jscoverVersion", "The version of JSCover used")
 
 
   // Define the settings values in a specific SBT configuration
@@ -36,7 +40,8 @@ object JSCoverPlugin extends Plugin {
     },
     jscoverGenerate <<= jscoverGenerateTask,
     resourceGenerators in Compile <+= jscoverGenerate,
-    jscoverMergeReports <<= jscoverMergeTask
+    jscoverMergeReports <<= jscoverMergeTask,
+    jscoverFormatReport <<= jscoverFormat
   )) ++ Seq[Setting[_]] (
     libraryDependencies <+= (jscoverVersion in jscoverConfig)("com.github.tntim96" % "JSCover" % _ % "jscover"),
     ivyConfigurations += jscoverConfig
@@ -101,22 +106,48 @@ object JSCoverPlugin extends Plugin {
   // Merging
   def jscoverMergeTask = (streams, managedClasspath in jscoverConfig, classpathTypes, test in Test, thisProject) map {
     (out, deps, ct, t, project) =>
-      deps.seq.foreach{ f =>
-        f.map { file =>
+      val reportDirs:Array[File] = (project.base / "target/test-reports/jscover").listFiles()
+
+      reportDirs.length match {
+        case 0 => (project.base / "target/test-reports/jscoverReport").absolutePath
+        case 1 => reportDirs(0).absolutePath
+        case _ => deps.seq.foreach{ f =>
+            f.map { file =>
+              (project.base / "target/test-reports/jscoverReport").absolutePath
+              val exitCode = jscoverMergeReports(file.absolutePath,
+                (project.base / "target/test-reports/jscover").absolutePath,
+                (project.base / "target/test-reports/jscoverReport").absolutePath,
+                out.log)
+            }
+          }
           (project.base / "target/test-reports/jscoverReport").absolutePath
-          val exitCode = jscoverMergeReports(file.absolutePath,
-                                             (project.base / "target/test-reports/jscover").absolutePath,
-                                             (project.base / "target/test-reports/jscoverReport").absolutePath,
-                                             out.log)
-        }
       }
-      (project.base / "target/test-reports/jscoverReport").absolutePath
   }
 
   private def jscoverMergeReports(cp:String, reportDir:String, destinationPath:String, log:Logger) = try {
     val proc = Process(
       "java",
       Seq("-cp", cp, "jscover.report.Main", "--merge", reportDir, destinationPath)
+    )
+    log.info(proc.toString)
+    proc ! log
+  }
+
+  // Format report
+  def jscoverFormat = (streams, jscoverMergeReports, jscoverReportFormat, jscoverSourcePath, managedClasspath in jscoverConfig, classpathTypes) map {
+    (out, reportDir, reportFormat, sourcePath, deps, ct) =>
+      deps.seq.foreach{ f =>
+        f.map { file =>
+          val exitCode = jscoverFormatReport(reportFormat, file.absolutePath, reportDir, sourcePath.absolutePath, out.log)
+        }
+      }
+      reportDir
+  }
+
+  private def jscoverFormatReport(format:String, cp:String, reportDir:String, sourceDir:String, log:Logger) = try {
+    val proc = Process(
+      "java",
+      Seq("-cp", cp, "jscover.report.Main", "--format", format, reportDir, sourceDir)
     )
     log.info(proc.toString)
     proc ! log
