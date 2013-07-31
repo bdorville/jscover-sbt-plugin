@@ -148,7 +148,7 @@ object JSCoverPlugin extends Plugin {
   private def jscoverFormatReport(format:String, cp:String, reportDir:String, sourceDir:String, log:Logger) = try {
     val proc = Process(
       "java",
-      Seq("-cp", cp, "jscover.report.Main", "--format", format, reportDir, sourceDir)
+      Seq("-cp", cp, "jscover.report.Main", "--format=" + format, reportDir, sourceDir)
     )
     log.info(proc.toString)
     proc ! log
