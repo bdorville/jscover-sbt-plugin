@@ -3,6 +3,11 @@ import Keys._
 
 object JSCoverPlayPluginBuild extends Build {
 
+  /**
+   * Define custom keys
+   */
+  lazy val scalaSbtRepository = SettingKey[String]("scala-sbt-repository", "The publishing repository URL")
+
   lazy val seleniumVersion = SettingKey[String]("selenium-version", "The version of Selenium used")
 
   lazy val playFrameworkVersion = SettingKey[String]("play-version", "The version of Play Framework")

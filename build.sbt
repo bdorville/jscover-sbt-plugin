@@ -8,8 +8,9 @@ organization in ThisBuild := "net.jazonnet.sbt.plugins"
 
 scalacOptions in ThisBuild := Seq("-deprecation", "-unchecked")
 
-publishTo in ThisBuild <<= (version) { version: String =>
-  val scalasbt = "https://sample.org/artifactory/"
+scalaSbtRepository in ThisBuild := "https://sample.org/artifactory/"
+
+publishTo in ThisBuild <<= (version, scalaSbtRepository) { (version: String, scalasbt: String) =>
   val (name, url) = if (version.trim.endsWith("SNAPSHOT"))
                       ("sbt-plugins-snapshots", scalasbt + "plugins-snapshot-local")
                     else
