@@ -110,7 +110,7 @@ object JSCoverPlugin extends Plugin {
                                              out.log)
         }
       }
-      "target/test-reports/jscover"
+      (project.base / "target/test-reports/jscoverReport").absolutePath
   }
 
   private def jscoverMergeReports(cp:String, reportDir:String, destinationPath:String, log:Logger) = try {
