@@ -132,6 +132,7 @@ public class JSCoverTest {
                 try {
                     FileWriter fw = new FileWriter(jscoverReports);
                     fw.write(jsonReport);
+                    fw.close();
                 } catch (IOException e) {
                     Logger.error("Failed to write JSON coverage report", e);
                 }
