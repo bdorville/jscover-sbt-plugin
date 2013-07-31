@@ -35,7 +35,8 @@ object JSCoverPlugin extends Plugin {
       Classpaths.managedJars(jscoverConfig, ct, report)
     },
     jscoverGenerate <<= jscoverGenerateTask,
-    resourceGenerators in Compile <+= jscoverGenerate
+    resourceGenerators in Compile <+= jscoverGenerate,
+    jscoverMergeReports <<= jscoverMergeTask
   )) ++ Seq[Setting[_]] (
     libraryDependencies <+= (jscoverVersion in jscoverConfig)("com.github.tntim96" % "JSCover" % _ % "jscover"),
     ivyConfigurations += jscoverConfig
@@ -95,5 +96,29 @@ object JSCoverPlugin extends Plugin {
       }
     }
     a.toSeq
+  }
+
+  // Merging
+  def jscoverMergeTask = (streams, managedClasspath in jscoverConfig, classpathTypes, test in Test, thisProject) map {
+    (out, deps, ct, t, project) =>
+      deps.seq.foreach{ f =>
+        f.map { file =>
+          (project.base / "target/test-reports/jscoverReport").absolutePath
+          val exitCode = jscoverMergeReports(file.absolutePath,
+                                             (project.base / "target/test-reports/jscover").absolutePath,
+                                             (project.base / "target/test-reports/jscoverReport").absolutePath,
+                                             out.log)
+        }
+      }
+      "target/test-reports/jscover"
+  }
+
+  private def jscoverMergeReports(cp:String, reportDir:String, destinationPath:String, log:Logger) = try {
+    val proc = Process(
+      "java",
+      Seq("-jar", cp, "--merge", reportDir, destinationPath)
+    )
+    log.info(proc.toString)
+    proc ! log
   }
 }
