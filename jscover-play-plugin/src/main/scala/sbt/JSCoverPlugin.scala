@@ -41,6 +41,7 @@ object JSCoverPlugin extends Plugin {
     jscoverGenerate <<= jscoverGenerateTask,
     resourceGenerators in Compile <+= jscoverGenerate,
     jscoverMergeReports <<= jscoverMergeTask,
+    jscoverReportFormat := "LCOV",
     jscoverFormatReport <<= jscoverFormat
   )) ++ Seq[Setting[_]] (
     libraryDependencies <+= (jscoverVersion in jscoverConfig)("com.github.tntim96" % "JSCover" % _ % "jscover"),
