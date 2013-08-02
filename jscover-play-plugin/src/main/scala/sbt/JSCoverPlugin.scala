@@ -127,7 +127,7 @@ object JSCoverPlugin extends Plugin {
           if (!destFolder.exists()) {
             destFolder.mkdir()
           }
-          (project.base / "target/test-reports/jscover").listFiles() foreach {f => copyFolder(jscoverGeneratedFiles / "original-src", f / "original-src") }
+          (project.base / "target/test-reports/jscover").listFiles() foreach {f => copy(jscoverGeneratedFiles / "original-src", f / "original-src") }
           deps.seq.foreach{ f =>
             f.map { file =>
               val exitCode = jscoverMergeReports(file.absolutePath,
@@ -149,7 +149,7 @@ object JSCoverPlugin extends Plugin {
     proc ! log
   }
 
-  private def copyFolder(from:File, to:File):Unit = {
+  private def copy(from:File, to:File):Unit = {
     if (from.isDirectory) {
       if (!to.exists()) {
         to.mkdir()
@@ -157,7 +157,7 @@ object JSCoverPlugin extends Plugin {
       if (to.isFile) {
         throw new IllegalStateException("Destination folder is a File")
       }
-      from.listFiles().foreach{ f => copyFolder(f, new File(to, f.getName)) }
+      from.listFiles().foreach{ f => copy(f, new File(to, f.getName)) }
     } else {
       val fos = new FileOutputStream(to)
       fos getChannel() transferFrom(new FileInputStream(from) getChannel(), 0, Long.MaxValue)
@@ -177,11 +177,8 @@ object JSCoverPlugin extends Plugin {
       destDir.mkdir()
     }
     val finalReport = new File(destDir, "jscoverage.json")
-    if (originalReport.renameTo(finalReport)) {
-      finalReport
-    } else {
-      throw new IllegalStateException("Could not rename original report to final one")
-    }
+    copy(originalReport, finalReport)
+    finalReport
   }
 
   // Format report
