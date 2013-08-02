@@ -121,7 +121,7 @@ object JSCoverPlugin extends Plugin {
 
       reportDirs.length match {
         case 0 => (project.base / "target/test-reports/jscoverReport").absolutePath
-        case 1 => jscoverPrepareSingleReport(project.base / "target/test-reports/jscover", project.base / "target/test-reports/jscoverReport").absolutePath
+        case 1 => jscoverPrepareSingleReport(project.base / "target/test-reports/jscover", project.base / "target/test-reports/jscoverReport").getParentFile.absolutePath
         case _ => deps.seq.foreach{ f =>
             f.map { file =>
               (project.base / "target/test-reports/jscoverReport").absolutePath
