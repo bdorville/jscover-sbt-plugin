@@ -12,6 +12,7 @@ object JSCoverPlayPluginBuild extends Build {
 
   lazy val playFrameworkVersion = SettingKey[String]("play-version", "The version of Play Framework")
 
+  // Projects definitions
   lazy val jscoverPlayUtils = Project(id = "jscover-play-utils", base = file("jscover-play-utils"))
 
   lazy val jscoverPlayPlugin = Project(id = "jscover-play-plugin", base = file("jscover-play-plugin"))
