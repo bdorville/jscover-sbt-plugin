@@ -27,6 +27,10 @@ object JSCoverPlugin extends Plugin {
 
   lazy val jscoverVersion = SettingKey[String]("jscoverVersion", "The version of JSCover used")
 
+  lazy val jscoverReportsDir = SettingKey[File]("jsoverReportsDir", "Test reporting folder")
+
+  lazy val jscoverReportDir = SettingKey[File]("jscoverReportDir", "Merge test folder")
+
 
   // Define the settings values in a specific SBT configuration
   lazy val jscoverSettings: Seq[Setting[_]] = inConfig(jscoverConfig)(Seq[Setting[_]] (
@@ -40,6 +44,8 @@ object JSCoverPlugin extends Plugin {
     },
     jscoverGenerate <<= jscoverGenerateTask,
     resourceGenerators in Compile <+= jscoverGenerate,
+    jscoverReportsDir <<= (thisProject) { project => project.base / "target/test-reports/jscoverReports"},
+    jscoverReportDir <<= (thisProject) { project => project.base / "target/test-reports/jscoverReport"},
     jscoverMergeReports <<= jscoverMergeTask,
     jscoverReportFormat := "LCOV",
     jscoverFormatReport <<= jscoverFormat
@@ -104,19 +110,23 @@ object JSCoverPlugin extends Plugin {
     a.toSeq
   }
 
-  // Merging
+  /**
+   * If there are several reports, merge them.
+   * If there is only one report, rename it.
+   * @return
+   */
   def jscoverMergeTask = (streams, managedClasspath in jscoverConfig, classpathTypes, test in Test, thisProject) map {
     (out, deps, ct, t, project) =>
       val reportDirs:Array[File] = (project.base / "target/test-reports/jscover").listFiles()
 
       reportDirs.length match {
         case 0 => (project.base / "target/test-reports/jscoverReport").absolutePath
-        case 1 => (project.base / "target/test-reports/jscover").absolutePath
+        case 1 => jscoverPrepareSingleReport(project.base / "target/test-reports/jscover", project.base / "target/test-reports/jscoverReport").absolutePath
         case _ => deps.seq.foreach{ f =>
             f.map { file =>
               (project.base / "target/test-reports/jscoverReport").absolutePath
               val exitCode = jscoverMergeReports(file.absolutePath,
-                (project.base / "target/test-reports/jscover").absolutePath,
+                (project.base / "target/test-reports/jscover").list(),
                 (project.base / "target/test-reports/jscoverReport").absolutePath,
                 out.log)
             }
@@ -125,13 +135,29 @@ object JSCoverPlugin extends Plugin {
       }
   }
 
-  private def jscoverMergeReports(cp:String, reportDir:String, destinationPath:String, log:Logger) = try {
+  private def jscoverMergeReports(cp:String, reportDirs:Seq[String], destinationPath:String, log:Logger) = try {
     val proc = Process(
       "java",
-      Seq("-cp", cp, "jscover.report.Main", "--merge", reportDir, destinationPath)
+      Seq[String]("-cp", cp, "jscover.report.Main", "--merge") ++ reportDirs ++ Seq(destinationPath)
     )
     log.info(proc.toString)
     proc ! log
+  }
+
+  private def jscoverPrepareSingleReport(reportDir:File, destDir:File):File = {
+    if (reportDir.listFiles().size != 1) {
+      throw new IllegalStateException("There should be only one report folder")
+    }
+    if (reportDir.listFiles()(0).listFiles().size != 1) {
+      throw new IllegalStateException("There should be only one report file")
+    }
+    val originalReport = reportDir.listFiles()(0).listFiles()(0)
+    val finalReport = new File(destDir, "jscoverage.json")
+    if (originalReport.renameTo(finalReport)) {
+      finalReport
+    } else {
+      throw new IllegalStateException("Could not rename original report to final one")
+    }
   }
 
   // Format report
