@@ -152,6 +152,9 @@ object JSCoverPlugin extends Plugin {
       throw new IllegalStateException("There should be only one report file")
     }
     val originalReport = reportDir.listFiles()(0).listFiles()(0)
+    if (!destDir.exists()) {
+      destDir.mkdir()
+    }
     val finalReport = new File(destDir, "jscoverage.json")
     if (originalReport.renameTo(finalReport)) {
       finalReport
