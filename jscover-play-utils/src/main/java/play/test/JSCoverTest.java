@@ -108,14 +108,14 @@ public class JSCoverTest {
             for (String childPath: jscoverReports.list()) {
                 Logger.debug("\t" + childPath);
             }
-            jscoverReports = new File(jscoverReports, description.getClassName());
+            jscoverReports = new File(jscoverReports, description.getClassName() + "-" + description.getMethodName());
             if (!jscoverReports.exists()) {
                 jscoverReports.mkdir();
             }
             if (jscoverReports.isFile()) {
                 throw new IllegalStateException("A file exists where JSCover report for class \"" + description.getClassName() + "\" should be saved");
             }
-            String reportFileName = description.getMethodName() + ".json";
+            String reportFileName = "jscoverage.json";
             jscoverReports = new File(jscoverReports, reportFileName);
             if (!jscoverReports.exists()) {
                 try {
