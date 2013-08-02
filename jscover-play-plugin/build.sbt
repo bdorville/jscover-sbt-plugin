@@ -13,4 +13,4 @@ scalacOptions := Seq("-deprecation", "-unchecked")
 // Scripted plugin for tests
 addSbtPlugin("org.scala-sbt" % "scripted-plugin" % "0.12.4", "", "")
 
-ScriptedPlugin.scriptedSettings
+//ScriptedPlugin.scriptedSettings
