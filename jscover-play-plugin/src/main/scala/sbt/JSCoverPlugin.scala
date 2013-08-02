@@ -3,6 +3,7 @@ package sbt
 import sbt._
 import Keys._
 import scala.collection.mutable.ArrayBuffer
+import java.io.{FileInputStream, FileOutputStream}
 
 
 object JSCoverPlugin extends Plugin {
@@ -115,8 +116,8 @@ object JSCoverPlugin extends Plugin {
    * If there is only one report, rename it.
    * @return
    */
-  def jscoverMergeTask = (streams, managedClasspath in jscoverConfig, classpathTypes, test in Test, thisProject) map {
-    (out, deps, ct, t, project) =>
+  def jscoverMergeTask = (streams, managedClasspath in jscoverConfig, classpathTypes, test in Test, thisProject, jscoverDestinationPath in jscoverConfig) map {
+    (out, deps, ct, t, project, jscoverGeneratedFiles) =>
       val reportDirs:Array[File] = (project.base / "target/test-reports/jscover").listFiles()
 
       reportDirs.length match {
@@ -126,6 +127,7 @@ object JSCoverPlugin extends Plugin {
           if (!destFolder.exists()) {
             destFolder.mkdir()
           }
+          (project.base / "target/test-reports/jscover").listFiles() foreach {f => copyFolder(jscoverGeneratedFiles / "original-src", f / "original-src") }
           deps.seq.foreach{ f =>
             f.map { file =>
               val exitCode = jscoverMergeReports(file.absolutePath,
@@ -145,6 +147,20 @@ object JSCoverPlugin extends Plugin {
     )
     log.info(proc.toString)
     proc ! log
+  }
+
+  private def copyFolder(from:File, to:File):Unit = {
+    if (from.isDirectory) {
+      if (!to.exists()) {
+        to.mkdir()
+      }
+      if (to.isFile) {
+        throw new IllegalStateException("Destination folder is a File")
+      }
+      from.listFiles().foreach{ f => copyFolder(f, new File(to, f.getName)) }
+    } else {
+      new FileOutputStream(to) getChannel() transferFrom(new FileInputStream(from) getChannel(), 0, Long.MaxValue)
+    }
   }
 
   private def jscoverPrepareSingleReport(reportDir:File, destDir:File):File = {
