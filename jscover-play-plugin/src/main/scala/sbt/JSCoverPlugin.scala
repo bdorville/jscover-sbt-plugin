@@ -159,7 +159,9 @@ object JSCoverPlugin extends Plugin {
       }
       from.listFiles().foreach{ f => copyFolder(f, new File(to, f.getName)) }
     } else {
-      new FileOutputStream(to) getChannel() transferFrom(new FileInputStream(from) getChannel(), 0, Long.MaxValue)
+      val fos = new FileOutputStream(to)
+      fos getChannel() transferFrom(new FileInputStream(from) getChannel(), 0, Long.MaxValue)
+      fos close()
     }
   }
 
