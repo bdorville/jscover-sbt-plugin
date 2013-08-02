@@ -129,7 +129,7 @@ object JSCoverPlugin extends Plugin {
           deps.seq.foreach{ f =>
             f.map { file =>
               val exitCode = jscoverMergeReports(file.absolutePath,
-                (project.base / "target/test-reports/jscover").list(),
+                (project.base / "target/test-reports/jscover").listFiles(),
                 destFolder.absolutePath,
                 out.log)
             }
@@ -138,10 +138,10 @@ object JSCoverPlugin extends Plugin {
       }
   }
 
-  private def jscoverMergeReports(cp:String, reportDirs:Seq[String], destinationPath:String, log:Logger) = try {
+  private def jscoverMergeReports(cp:String, reportDirs:Seq[File], destinationPath:String, log:Logger) = try {
     val proc = Process(
       "java",
-      Seq[String]("-cp", cp, "jscover.report.Main", "--merge") ++ reportDirs ++ Seq(destinationPath)
+      Seq[String]("-cp", cp, "jscover.report.Main", "--merge") ++ (reportDirs map { f:File => f.absolutePath }) ++ Seq(destinationPath)
     )
     log.info(proc.toString)
     proc ! log
